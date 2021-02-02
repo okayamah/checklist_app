@@ -1,7 +1,7 @@
 class ConstText {
-  static final appTitle = "Simple Todo App";
-  static final todoListView = "Todo List";
-  static final todoEditView = "Todo Edit";
-  static final todoCreateView = "New Todo";
+  static final appTitle = "Simple Check App";
+  static final todoListView = "Check List";
+  static final todoEditView = "Check Edit";
+  static final todoCreateView = "New List";
   static final start = "start";
 }

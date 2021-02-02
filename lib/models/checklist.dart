@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-class Todo {
+class Checklist {
   String id;
   String title;
   DateTime dueDate;
   String note;
 
-  Todo({this.id, @required this.title, @required this.dueDate, @required this.note});
-  Todo.newTodo() {
+  Checklist({this.id, @required this.title, @required this.dueDate, @required this.note});
+  Checklist.newTodo() {
     title = "";
     dueDate = DateTime.now();
     note = "";
@@ -19,7 +19,7 @@ class Todo {
   }
 
   // staticでも同じ？
-  factory Todo.fromMap(Map<String, dynamic> json) => Todo(
+  factory Checklist.fromMap(Map<String, dynamic> json) => Checklist(
     id: json["id"],
     title: json["title"],
     // DateTime型は文字列で保存されているため、DateTime型に変換し直す

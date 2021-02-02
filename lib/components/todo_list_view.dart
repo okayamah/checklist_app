@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:checklist_app/components/todo_edit_view.dart';
 import 'package:checklist_app/configs/const_text.dart';
-import 'package:checklist_app/models/todo.dart';
+import 'package:checklist_app/models/checklist.dart';
 import 'package:checklist_app/repositories/todo_bloc.dart';
 
 class TodoListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final _bloc = Provider.of<TodoBloc>(context, listen: false);
+    final _bloc = Provider.of<ChecklistBloc>(context, listen: false);
 
     return Scaffold(
       backgroundColor: const Color(0xffEFEFEF),
@@ -24,14 +24,15 @@ class TodoListView extends StatelessWidget {
         ),
         backgroundColor: Color(0xcc0eb4c2),
       ),
-      body: StreamBuilder<List<Todo>>(
+      body: StreamBuilder<List<Checklist>>(
         stream: _bloc.todoStream,
-        builder: (BuildContext context, AsyncSnapshot<List<Todo>> snapshot) {
+        builder:
+            (BuildContext context, AsyncSnapshot<List<Checklist>> snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
               itemCount: snapshot.data.length,
               itemBuilder: (BuildContext context, int index) {
-                Todo todo = snapshot.data[index];
+                Checklist todo = snapshot.data[index];
 
                 return Dismissible(
                   key: Key(todo.id),
@@ -85,18 +86,17 @@ class TodoListView extends StatelessWidget {
     );
   }
 
-  _moveToEditView(
-          BuildContext context, TodoBloc bloc, Todo todo) =>
+  _moveToEditView(BuildContext context, ChecklistBloc bloc, Checklist todo) =>
       Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => TodoEditView(todoBloc: bloc, todo: todo)));
 
-  _moveToCreateView(BuildContext context, TodoBloc bloc) => Navigator.push(
+  _moveToCreateView(BuildContext context, ChecklistBloc bloc) => Navigator.push(
       context,
       MaterialPageRoute(
           builder: (context) =>
-              TodoEditView(todoBloc: bloc, todo: Todo.newTodo())));
+              TodoEditView(todoBloc: bloc, todo: Checklist.newTodo())));
 
   _backgroundOfDismissible() => Container(
       alignment: Alignment.centerLeft,

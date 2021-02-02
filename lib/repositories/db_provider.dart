@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:checklist_app/models/todo.dart';
+import 'package:checklist_app/models/checklist.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite/sqlite_api.dart';
 
@@ -14,8 +14,7 @@ class DBProvider {
   static final _tableName = "Todo";
 
   Future<Database> get database async {
-    if (_database != null)
-      return _database;
+    if (_database != null) return _database;
 
     // DBがなかったら作る
     _database = await initDB();
@@ -33,19 +32,16 @@ class DBProvider {
   }
 
   Future<void> _createTable(Database db, int version) async {
-
     // sqliteではDate型は直接保存できないため、文字列形式で保存する
-    return await db.execute(
-      "CREATE TABLE $_tableName ("
-      "id TEXT PRIMARY KEY,"
-      "title TEXT,"
-      "dueDate TEXT,"
-      "note TEXT"
-      ")"
-    );
+    return await db.execute("CREATE TABLE $_tableName ("
+        "id TEXT PRIMARY KEY,"
+        "title TEXT,"
+        "dueDate TEXT,"
+        "note TEXT"
+        ")");
   }
 
-  createTodo(Todo todo) async {
+  createTodo(Checklist todo) async {
     final db = await database;
     var res = await db.insert(_tableName, todo.toMap());
     return res;
@@ -54,30 +50,21 @@ class DBProvider {
   getAllTodos() async {
     final db = await database;
     var res = await db.query(_tableName);
-    List<Todo> list =
-        res.isNotEmpty ? res.map((c) => Todo.fromMap(c)).toList() : [];
+    List<Checklist> list =
+        res.isNotEmpty ? res.map((c) => Checklist.fromMap(c)).toList() : [];
     return list;
   }
 
-  updateTodo(Todo todo) async {
+  updateTodo(Checklist todo) async {
     final db = await database;
-    var res  = await db.update(
-      _tableName, 
-      todo.toMap(),
-      where: "id = ?",
-      whereArgs: [todo.id]  
-    );
+    var res = await db.update(_tableName, todo.toMap(),
+        where: "id = ?", whereArgs: [todo.id]);
     return res;
   }
 
   deleteTodo(String id) async {
     final db = await database;
-    var res = db.delete(
-      _tableName,
-      where: "id = ?",
-      whereArgs: [id]
-    );
+    var res = db.delete(_tableName, where: "id = ?", whereArgs: [id]);
     return res;
   }
-
 }
