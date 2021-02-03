@@ -25,18 +25,6 @@ class TodoEditView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            ConstText.todoEditView,
-            style: TextStyle(
-              fontFamily: 'Retro Stereo',
-              fontSize: 20,
-              color: const Color(0xfff4f4ef),
-            ),
-            textAlign: TextAlign.left,
-          ),
-          backgroundColor: Color(0xcc0eb4c2),
-        ),
         body: Container(
           padding: const EdgeInsets.all(30.0),
           child: Column(
@@ -51,7 +39,7 @@ class TodoEditView extends StatelessWidget {
   }
 
   Widget _titleTextFormField() => TextFormField(
-        decoration: InputDecoration(labelText: "タイトル"),
+        decoration: InputDecoration(labelText: ConstText.cardTitle),
         initialValue: _newTodo.title,
         onChanged: _setTitle,
       );
@@ -63,7 +51,7 @@ class TodoEditView extends StatelessWidget {
   // ↓ https://pub.dev/packages/datetime_picker_formfield のサンプルから引用
   Widget _dueDateTimeFormField() => DateTimeField(
       format: _format,
-      decoration: InputDecoration(labelText: "締切日"),
+      decoration: InputDecoration(labelText: ConstText.cardDate),
       initialValue: _newTodo.dueDate ?? DateTime.now(),
       onChanged: _setDueDate,
       onShowPicker: (context, currentValue) async {
@@ -88,7 +76,7 @@ class TodoEditView extends StatelessWidget {
   }
 
   Widget _noteTextFormField() => TextFormField(
-        decoration: InputDecoration(labelText: "メモ"),
+        decoration: InputDecoration(labelText: ConstText.cardTask),
         initialValue: _newTodo.note,
         maxLines: 3,
         onChanged: _setNote,
@@ -105,6 +93,7 @@ class TodoEditView extends StatelessWidget {
         ),
         label: Text("決定"),
         onPressed: () {
+          _newTodo.title = _newTodo.title == "" ? "test" : _newTodo.title;
           if (_newTodo.id == null) {
             todoBloc.create(_newTodo);
           } else {

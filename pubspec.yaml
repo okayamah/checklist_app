@@ -34,6 +34,8 @@ dependencies:
 
   sqflite: ^1.2.0
   path_provider: ^1.6.0
+
+  group_list_view: ^1.0.6
   
 dev_dependencies:
   flutter_test:
