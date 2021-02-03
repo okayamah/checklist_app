@@ -2,15 +2,15 @@ import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:checklist_app/configs/const_text.dart';
-import 'package:checklist_app/models/todo.dart';
+import 'package:checklist_app/models/checklist.dart';
 import 'package:checklist_app/repositories/todo_bloc.dart';
 
 class TodoEditView extends StatelessWidget {
   final DateFormat _format = DateFormat("yyyy-MM-dd HH:mm");
 
-  final TodoBloc todoBloc;
-  final Todo todo;
-  final Todo _newTodo = Todo.newTodo();
+  final ChecklistBloc todoBloc;
+  final Checklist todo;
+  final Checklist _newTodo = Checklist.newTodo();
 
   TodoEditView({Key key, @required this.todoBloc, @required this.todo}) {
     // Dartでは参照渡しが行われるため、todoをそのまま編集してしまうと、
