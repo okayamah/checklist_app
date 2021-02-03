@@ -52,6 +52,7 @@ class TodoListView extends StatelessWidget {
                           new DateFormat('yyyy/MM/dd').format(e.dueDate) ==
                           dates[index.section])
                       .toList()[index.index];
+                  var editView = TodoEditView(todoBloc: _bloc, todo: todo);
                   return Dismissible(
                     key: Key(todo.id),
                     background: _backgroundOfDismissible(),
@@ -79,9 +80,14 @@ class TodoListView extends StatelessWidget {
                       onTap: () {
                         // _moveToEditView(context, _bloc, todo);
                         showModalBottomSheet<void>(
+                            isScrollControlled: true,
                             context: context,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(16)),
+                            ),
                             builder: (BuildContext context) {
-                              return TodoEditView(todoBloc: _bloc, todo: todo);
+                              return editView;
                             });
                       },
                     )),
@@ -121,13 +127,18 @@ class TodoListView extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          var editView = TodoEditView(todoBloc: _bloc, todo: Checklist.newTodo());
           // _moveToCreateView(context, _bloc);
           showModalBottomSheet<void>(
+              isScrollControlled: true,
               context: context,
+              shape: RoundedRectangleBorder(
+                // <= 追加
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
               builder: (BuildContext context) {
-                return TodoEditView(todoBloc: _bloc, todo: Checklist.newTodo());
-              }
-          );
+                return editView;
+              });
         },
         child: Icon(
           Icons.add,

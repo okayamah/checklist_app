@@ -11,6 +11,7 @@ class ConstText {
   static final cardIcon = "Icon";
   static final cardDate = "Limit Date";
   static final cardTask = "Task";
+  static final cardAdd = "Add";
 }
 
 class AppColors {

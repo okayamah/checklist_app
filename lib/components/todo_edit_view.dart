@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:checklist_app/configs/const_text.dart';
 import 'package:checklist_app/models/checklist.dart';
 import 'package:checklist_app/repositories/todo_bloc.dart';
+import 'package:checklist_app/common_widget/text_field.dart';
 
 class TodoEditView extends StatelessWidget {
   final DateFormat _format = DateFormat("yyyy-MM-dd HH:mm");
@@ -24,23 +27,24 @@ class TodoEditView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: Container(
-          padding: const EdgeInsets.all(30.0),
-          child: Column(
-            children: <Widget>[
-              _titleTextFormField(),
-              _dueDateTimeFormField(),
-              _noteTextFormField(),
-              _confirmButton(context)
-            ],
-          ),
-        ));
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      padding: const EdgeInsets.all(30.0),
+      child: Column(
+        children: <Widget>[
+          _titleTextFormField(),
+          _dueDateTimeFormField(),
+          _noteTextFormField(),
+          Expanded(child: SizedBox()),
+          _confirmButton(context)
+        ],
+      ),
+    );
   }
 
-  Widget _titleTextFormField() => TextFormField(
-        decoration: InputDecoration(labelText: ConstText.cardTitle),
-        initialValue: _newTodo.title,
+  Widget _titleTextFormField() => TextFieldWidget(
+        title: ConstText.cardTitle,
+        value: _newTodo.title,
         onChanged: _setTitle,
       );
 
@@ -49,36 +53,56 @@ class TodoEditView extends StatelessWidget {
   }
 
   // ↓ https://pub.dev/packages/datetime_picker_formfield のサンプルから引用
-  Widget _dueDateTimeFormField() => DateTimeField(
-      format: _format,
-      decoration: InputDecoration(labelText: ConstText.cardDate),
-      initialValue: _newTodo.dueDate ?? DateTime.now(),
-      onChanged: _setDueDate,
-      onShowPicker: (context, currentValue) async {
-        final date = await showDatePicker(
-            context: context,
-            firstDate: DateTime(2000),
-            initialDate: currentValue ?? DateTime.now(),
-            lastDate: DateTime(2100));
-        if (date != null) {
-          final time = await showTimePicker(
-            context: context,
-            initialTime: TimeOfDay.fromDateTime(currentValue ?? DateTime.now()),
-          );
-          return DateTimeField.combine(date, time);
-        } else {
-          return currentValue;
-        }
-      });
+  Widget _dueDateTimeFormField() => Padding(
+        padding: EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(ConstText.cardDate,
+                      style: TextStyle(fontSize: 13.0, color: Colors.black54)),
+                  // SizedBox(height: 4.0),
+                  DateTimeField(
+                      style: TextStyle(fontSize: 20.0),
+                      format: _format,
+                      initialValue: _newTodo.dueDate ?? DateTime.now(),
+                      onChanged: _setDueDate,
+                      onShowPicker: (context, currentValue) async {
+                        final date = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime(2000),
+                            initialDate: currentValue ?? DateTime.now(),
+                            lastDate: DateTime(2100));
+                        if (date != null) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(
+                                currentValue ?? DateTime.now()),
+                          );
+                          return DateTimeField.combine(date, time);
+                        } else {
+                          return currentValue;
+                        }
+                      }),
+                  Divider(height: 1.0, color: Colors.black87),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
 
   void _setDueDate(DateTime dt) {
     _newTodo.dueDate = dt;
   }
 
-  Widget _noteTextFormField() => TextFormField(
-        decoration: InputDecoration(labelText: ConstText.cardTask),
-        initialValue: _newTodo.note,
-        maxLines: 3,
+  Widget _noteTextFormField() => TextFieldWidget(
+        title: ConstText.cardTask,
+        value: _newTodo.note,
         onChanged: _setNote,
       );
 
@@ -86,24 +110,24 @@ class TodoEditView extends StatelessWidget {
     _newTodo.note = note;
   }
 
-  Widget _confirmButton(BuildContext context) => RaisedButton.icon(
-        icon: Icon(
-          Icons.tag_faces,
-          color: Colors.white,
-        ),
-        label: Text("決定"),
-        onPressed: () {
-          _newTodo.title = _newTodo.title == "" ? "test" : _newTodo.title;
-          if (_newTodo.id == null) {
-            todoBloc.create(_newTodo);
-          } else {
-            todoBloc.update(_newTodo);
-          }
+  Widget _confirmButton(BuildContext context) => ButtonTheme(
+        minWidth: MediaQuery.of(context).size.width * 0.8,
+        height: 50,
+        child: RaisedButton(
+          child: Text(ConstText.cardAdd, style: TextStyle(fontSize: 20)),
+          onPressed: () {
+            _newTodo.title = _newTodo.title == "" ? "test" : _newTodo.title;
+            if (_newTodo.id == null) {
+              todoBloc.create(_newTodo);
+            } else {
+              todoBloc.update(_newTodo);
+            }
 
-          Navigator.of(context).pop();
-        },
-        shape: StadiumBorder(),
-        color: Color(0xcc0eb4c2),
-        textColor: Colors.white,
+            Navigator.of(context).pop();
+          },
+          shape: StadiumBorder(),
+          color: Color(0xcc0eb4c2),
+          textColor: Colors.white,
+        ),
       );
 }

@@ -36,6 +36,7 @@ dependencies:
   path_provider: ^1.6.0
 
   group_list_view: ^1.0.6
+  auto_size_text: ^2.1.0
   
 dev_dependencies:
   flutter_test:
