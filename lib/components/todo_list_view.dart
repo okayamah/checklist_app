@@ -52,7 +52,7 @@ class TodoListView extends StatelessWidget {
                           new DateFormat('yyyy/MM/dd').format(e.dueDate) ==
                           dates[index.section])
                       .toList()[index.index];
-                  var editView = TodoEditView(todoBloc: _bloc, todo: todo);
+                  var editView = TodoEditView(todoBloc: _bloc, todo: todo, isNew: false);
                   return Dismissible(
                     key: Key(todo.id),
                     background: _backgroundOfDismissible(),
@@ -64,12 +64,33 @@ class TodoListView extends StatelessWidget {
                         child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 18, vertical: 10.0),
-                      leading: CircleAvatar(
-                        child: Text(
-                          _getInitials(todo.title),
-                          style: TextStyle(color: Colors.white, fontSize: 18),
+                      leading: ClipOval(
+                        child: GestureDetector(
+                          child: Container(
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 0.0, vertical: 0.0),
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  style: BorderStyle.solid,
+                                  width: 1.0,
+                                  color: _getAvatarColor(
+                                      todo.icon.isEmpty != true
+                                          ? todo.icon
+                                          : "1")),
+                            ),
+                            child: InkWell(
+                              child: SizedBox(
+                                child: Image.asset(AppColors.icons[
+                                    todo.icon.isEmpty != true
+                                        ? int.parse(todo.icon) - 1
+                                        : 0]),
+                              ),
+                            ),
+                          ),
                         ),
-                        backgroundColor: _getAvatarColor(todo.title),
                       ),
                       title: Text(
                         todo.title,
@@ -127,7 +148,8 @@ class TodoListView extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          var editView = TodoEditView(todoBloc: _bloc, todo: Checklist.newTodo());
+          var editView =
+              TodoEditView(todoBloc: _bloc, todo: Checklist.newTodo(), isNew: true,);
           // _moveToCreateView(context, _bloc);
           showModalBottomSheet<void>(
               isScrollControlled: true,
@@ -172,9 +194,8 @@ class TodoListView extends StatelessWidget {
     return buffer.toString().substring(0, split.length);
   }
 
-  Color _getAvatarColor(String user) {
-    return AppColors
-        .avatarColors[(user?.hashCode ?? 1) % AppColors.avatarColors.length];
+  Color _getAvatarColor(String colorIndex) {
+    return AppColors.avatarColors[int.parse(colorIndex) - 1];
   }
 
   _moveToEditView(BuildContext context, ChecklistBloc bloc, Checklist todo) =>

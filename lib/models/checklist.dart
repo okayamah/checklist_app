@@ -6,12 +6,14 @@ class Checklist {
   String title;
   DateTime dueDate;
   String note;
+  String icon;
 
-  Checklist({this.id, @required this.title, @required this.dueDate, @required this.note});
+  Checklist({this.id, @required this.title, @required this.dueDate, @required this.note, this.icon});
   Checklist.newTodo() {
     title = "";
     dueDate = DateTime.now();
     note = "";
+    icon = "";
   }
 
   assignUUID() {
@@ -24,7 +26,8 @@ class Checklist {
     title: json["title"],
     // DateTime型は文字列で保存されているため、DateTime型に変換し直す
     dueDate: DateTime.parse(json["dueDate"]).toLocal(), 
-    note: json["note"]
+    note: json["note"], 
+    icon: json["icon"]
   );
 
   Map<String, dynamic> toMap() => {
@@ -32,6 +35,7 @@ class Checklist {
     "title": title,
     // sqliteではDate型は直接保存できないため、文字列形式で保存する
     "dueDate": dueDate.toUtc().toIso8601String(),
-    "note": note
+    "note": note,
+    "icon": icon
   };
 }

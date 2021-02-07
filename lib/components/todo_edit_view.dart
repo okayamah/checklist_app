@@ -7,6 +7,7 @@ import 'package:checklist_app/configs/const_text.dart';
 import 'package:checklist_app/models/checklist.dart';
 import 'package:checklist_app/repositories/todo_bloc.dart';
 import 'package:checklist_app/common_widget/text_field.dart';
+import 'package:checklist_app/common_widget/icon_field.dart';
 
 class TodoEditView extends StatelessWidget {
   final DateFormat _format = DateFormat("yyyy-MM-dd HH:mm");
@@ -14,8 +15,13 @@ class TodoEditView extends StatelessWidget {
   final ChecklistBloc todoBloc;
   final Checklist todo;
   final Checklist _newTodo = Checklist.newTodo();
+  final bool isNew;
 
-  TodoEditView({Key key, @required this.todoBloc, @required this.todo}) {
+  TodoEditView(
+      {Key key,
+      @required this.todoBloc,
+      @required this.todo,
+      @required this.isNew}) {
     // Dartでは参照渡しが行われるため、todoをそのまま編集してしまうと、
     // 更新せずにリスト画面に戻ったときも値が更新されてしまうため、
     // 新しいインスタンスを作る
@@ -23,6 +29,7 @@ class TodoEditView extends StatelessWidget {
     _newTodo.title = todo.title;
     _newTodo.dueDate = todo.dueDate;
     _newTodo.note = todo.note;
+    _newTodo.icon = todo.icon;
   }
 
   @override
@@ -33,6 +40,8 @@ class TodoEditView extends StatelessWidget {
       child: Column(
         children: <Widget>[
           _titleTextFormField(),
+          _iconFormField(
+              _newTodo.icon.isNotEmpty ? int.parse(_newTodo.icon) : 0),
           _dueDateTimeFormField(),
           _noteTextFormField(),
           Expanded(child: SizedBox()),
@@ -48,8 +57,19 @@ class TodoEditView extends StatelessWidget {
         onChanged: _setTitle,
       );
 
+  Widget _iconFormField(int icon) => IconFormField(
+        title: ConstText.cardIcon,
+        groupValue: icon,
+        radioHandler: _selectIcon,
+        error: null,
+      );
+
   void _setTitle(String title) {
     _newTodo.title = title;
+  }
+
+  void _selectIcon(int icon) {
+    _newTodo.icon = icon.toString();
   }
 
   // ↓ https://pub.dev/packages/datetime_picker_formfield のサンプルから引用
@@ -113,21 +133,45 @@ class TodoEditView extends StatelessWidget {
   Widget _confirmButton(BuildContext context) => ButtonTheme(
         minWidth: MediaQuery.of(context).size.width * 0.8,
         height: 50,
-        child: RaisedButton(
-          child: Text(ConstText.cardAdd, style: TextStyle(fontSize: 20)),
-          onPressed: () {
-            _newTodo.title = _newTodo.title == "" ? "test" : _newTodo.title;
-            if (_newTodo.id == null) {
-              todoBloc.create(_newTodo);
-            } else {
-              todoBloc.update(_newTodo);
-            }
+        child: isNew
+            ? RaisedButton(
+                child: Text(ConstText.cardAdd, style: TextStyle(fontSize: 20)),
+                onPressed: () {
+                  _newTodo.title =
+                      _newTodo.title == "" ? "test" : _newTodo.title;
+                  if (_newTodo.id == null) {
+                    todoBloc.create(_newTodo);
+                  } else {
+                    todoBloc.update(_newTodo);
+                  }
 
-            Navigator.of(context).pop();
-          },
-          shape: StadiumBorder(),
-          color: Color(0xcc0eb4c2),
-          textColor: Colors.white,
-        ),
+                  Navigator.of(context).pop();
+                },
+                shape: StadiumBorder(),
+                color: Color(0xcc0eb4c2),
+                textColor: Colors.white,
+              )
+            : Row(
+                children: [
+                  RaisedButton(
+                    child:
+                        Text(ConstText.cardOK, style: TextStyle(fontSize: 20)),
+                    onPressed: () {
+                      _newTodo.title =
+                          _newTodo.title == "" ? "test" : _newTodo.title;
+                      if (_newTodo.id == null) {
+                        todoBloc.create(_newTodo);
+                      } else {
+                        todoBloc.update(_newTodo);
+                      }
+
+                      Navigator.of(context).pop();
+                    },
+                    shape: StadiumBorder(),
+                    color: Color(0xcc0eb4c2),
+                    textColor: Colors.white,
+                  ),
+                ],
+              ),
       );
 }

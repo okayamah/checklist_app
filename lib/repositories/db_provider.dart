@@ -37,7 +37,8 @@ class DBProvider {
         "id TEXT PRIMARY KEY,"
         "title TEXT,"
         "dueDate TEXT,"
-        "note TEXT"
+        "note TEXT,"
+        "icon TEXT"
         ")");
   }
 
