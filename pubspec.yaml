@@ -37,6 +37,10 @@ dependencies:
 
   group_list_view: ^1.0.6
   auto_size_text: ^2.1.0
+  flutter_speed_dial: ^2.1.1
+  flutter_clean_calendar: ^1.0.2+1
+  circular_check_box: ^1.0.4
+  expandable_group: ^0.0.7
   
 dev_dependencies:
   flutter_test:
@@ -94,3 +98,9 @@ flutter:
     - family: puikko
       fonts:
         - asset: assets/fonts/puikko.ttf
+    - family: materialIcon
+      fonts:
+        - asset: assets/fonts/materialIcon.ttf
+    - family: menuIcon
+      fonts:
+        - asset: assets/fonts/menuIcon.ttf

@@ -1,118 +1,170 @@
+import 'package:checklist_app/components/item_list_view.dart';
+import 'package:checklist_app/models/todo_list_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:checklist_app/common_widget/popup_menu.dart';
 import 'package:checklist_app/components/todo_edit_view.dart';
 import 'package:checklist_app/configs/const_text.dart';
-import 'package:checklist_app/models/checklist.dart';
+import 'package:checklist_app/entity/checklist.dart';
 import 'package:checklist_app/repositories/todo_bloc.dart';
+import 'package:checklist_app/repositories/task_bloc.dart';
 import 'package:group_list_view/group_list_view.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class TodoListView extends StatelessWidget {
+  final Function moveItemListFunc;
+  TodoListView({this.moveItemListFunc});
+
   @override
   Widget build(BuildContext context) {
     final _bloc = Provider.of<ChecklistBloc>(context, listen: false);
+    final _taskBloc = Provider.of<TaskBloc>(context, listen: false);
+
+    // // アイテムのプリセット
+    // _taskBloc.selectAll().then((ret) {
+    //   print(ret.toString());
+    // });
 
     return Scaffold(
       backgroundColor: const Color(0xffEFEFEF),
-      appBar: AppBar(
-        title: Text(
-          ConstText.todoListView,
-          style: TextStyle(
-            fontFamily: 'Retro Stereo',
-            fontSize: 20,
-            color: const Color(0xfff4f4ef),
-          ),
-          textAlign: TextAlign.left,
-        ),
-        backgroundColor: Color(0xcc0eb4c2),
-      ),
-      body: StreamBuilder<List<Checklist>>(
+      body: StreamBuilder<TodoListViewModel>(
         stream: _bloc.todoStream,
+        //   FutureBuilder(
+        // future: _bloc.selectAllWithStatus(),
         builder:
-            (BuildContext context, AsyncSnapshot<List<Checklist>> snapshot) {
+            (BuildContext context, AsyncSnapshot<TodoListViewModel> snapshot) {
           if (snapshot.hasData) {
-            if (snapshot.data.length > 0) {
-              snapshot.data.sort((a, b) => b.dueDate.compareTo(a.dueDate));
-              var dates = snapshot.data
-                  .map((e) => new DateFormat('yyyy/MM/dd').format(e.dueDate))
+            if (snapshot.data.checklist.length > 0) {
+              snapshot.data.checklist
+                  .sort((a, b) => b.check.dueDate.compareTo(a.check.dueDate));
+              var dates = snapshot.data.checklist
+                  .map((e) =>
+                      new DateFormat('yyyy/MM/dd').format(e.check.dueDate))
                   .toSet()
                   .toList();
               return GroupListView(
                 sectionsCount: dates.length,
                 countOfItemInSection: (int section) {
-                  return snapshot.data
+                  return snapshot.data.checklist
                       .where((e) =>
-                          new DateFormat('yyyy/MM/dd').format(e.dueDate) ==
+                          new DateFormat('yyyy/MM/dd')
+                              .format(e.check.dueDate) ==
                           dates[section])
                       .length;
                 },
                 itemBuilder: (BuildContext context, IndexPath index) {
-                  Checklist todo = snapshot.data
+                  ChecklistInfo todo = snapshot.data.checklist
                       .where((e) =>
-                          new DateFormat('yyyy/MM/dd').format(e.dueDate) ==
+                          new DateFormat('yyyy/MM/dd')
+                              .format(e.check.dueDate) ==
                           dates[index.section])
                       .toList()[index.index];
-                  var editView = TodoEditView(todoBloc: _bloc, todo: todo, isNew: false);
-                  return Dismissible(
-                    key: Key(todo.id),
-                    background: _backgroundOfDismissible(),
-                    secondaryBackground: _secondaryBackgroundOfDismissible(),
-                    onDismissed: (direction) {
-                      _bloc.delete(todo.id);
-                    },
-                    child: Card(
-                        child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 10.0),
-                      leading: ClipOval(
-                        child: GestureDetector(
-                          child: Container(
-                            margin: EdgeInsets.symmetric(
-                                horizontal: 0.0, vertical: 0.0),
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  style: BorderStyle.solid,
-                                  width: 1.0,
-                                  color: _getAvatarColor(
-                                      todo.icon.isEmpty != true
-                                          ? todo.icon
-                                          : "1")),
-                            ),
-                            child: InkWell(
-                              child: SizedBox(
-                                child: Image.asset(AppColors.icons[
-                                    todo.icon.isEmpty != true
-                                        ? int.parse(todo.icon) - 1
-                                        : 0]),
+                  return Card(
+                      margin: EdgeInsets.only(
+                          left: 4.0, top: 0.0, right: 4.0, bottom: 0.0),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 10.0),
+                        leading: ClipOval(
+                          child: GestureDetector(
+                            child: Container(
+                              margin: EdgeInsets.symmetric(
+                                  horizontal: 0.0, vertical: 0.0),
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    style: BorderStyle.solid,
+                                    width: 1.0,
+                                    color: _getAvatarColor(
+                                        todo.check.icon.isEmpty != true
+                                            ? todo.check.icon
+                                            : "1")),
+                              ),
+                              child: InkWell(
+                                child: SizedBox(
+                                  child: Image.asset(AppColors.icons[
+                                      todo.check.icon.isEmpty != true
+                                          ? int.parse(todo.check.icon) - 1
+                                          : 0]),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      title: Text(
-                        todo.title,
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w400),
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        // _moveToEditView(context, _bloc, todo);
-                        showModalBottomSheet<void>(
-                            isScrollControlled: true,
-                            context: context,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(16)),
+                        title: Text(
+                          todo.check.title,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color:
+                                  !todo.status ? Colors.black : Colors.black45,
+                              decoration: !todo.status
+                                  ? TextDecoration.none
+                                  : TextDecoration.lineThrough),
+                        ),
+                        trailing: PopUpMenu(
+                          onCreate: () {
+                            // 複製して新規作成画面へ
+                            var editView = TodoEditView(
+                              todoBloc: _bloc,
+                              todo: Checklist(
+                                  title: todo.check.title,
+                                  dueDate: DateTime.now(),
+                                  note: todo.check.note,
+                                  icon: todo.check.icon),
+                              isNew: true,
+                              taskBloc: _taskBloc,
+                            );
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) {
+                                  return editView;
+                                },
+                              ),
+                            );
+                          },
+                          onEdit: () {
+                            var editView = TodoEditView(
+                              todoBloc: _bloc,
+                              todo: todo.check,
+                              isNew: false,
+                              taskBloc: _taskBloc,
+                            );
+                            // 編集画面へ
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) {
+                                  return editView;
+                                },
+                              ),
+                            );
+                          },
+                          onDelete: () {
+                            // カードを削除
+                            _bloc.delete(todo.check.id);
+                          },
+                        ),
+                        // Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          var editView = TodoEditView(
+                            todoBloc: _bloc,
+                            todo: todo.check,
+                            isNew: false,
+                            taskBloc: _taskBloc,
+                          );
+                          // 編集画面へ
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return editView;
+                              },
                             ),
-                            builder: (BuildContext context) {
-                              return editView;
-                            });
-                      },
-                    )),
-                  );
+                          );
+                        },
+                      ));
                 },
                 groupHeaderBuilder: (BuildContext context, int section) {
                   return Padding(
@@ -136,7 +188,7 @@ class TodoListView extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'puikko',
                     fontSize: 30,
-                    color: const Color(0xcc0eb4c2),
+                    color: AppColors.DEFAULT_COLOR,
                   ),
                   textAlign: TextAlign.left,
                 ),
@@ -146,83 +198,102 @@ class TodoListView extends StatelessWidget {
           return Center(child: CircularProgressIndicator());
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          var editView =
-              TodoEditView(todoBloc: _bloc, todo: Checklist.newTodo(), isNew: true,);
-          // _moveToCreateView(context, _bloc);
-          showModalBottomSheet<void>(
-              isScrollControlled: true,
-              context: context,
-              shape: RoundedRectangleBorder(
-                // <= 追加
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              builder: (BuildContext context) {
-                return editView;
-              });
-        },
-        child: Icon(
-          Icons.add,
-          size: 40,
-        ),
-        backgroundColor: Color(0xccA01D26),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: const Color(0xcc0eb4c2),
-        items: [
-          new BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            title: Text('Home'),
-          ),
-          new BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            title: Text('Search'),
-          ),
-          new BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today), title: Text('Calendar'))
-        ],
-      ),
+      floatingActionButton: buildSpeedDial(_bloc, _taskBloc, context),
     );
   }
 
-  String _getInitials(String user) {
-    var buffer = StringBuffer();
-    var split = user.split(" ");
-    for (var s in split) buffer.write(s[0]);
+  SpeedDial buildSpeedDial(
+      ChecklistBloc _bloc, TaskBloc _taskBloc, BuildContext context) {
+    return SpeedDial(
+      /// both default to 16
+      marginEnd: 18,
+      marginBottom: 20,
+      // animatedIcon: AnimatedIcons.menu_close,
+      // animatedIconTheme: IconThemeData(size: 22.0),
+      /// This is ignored if animatedIcon is non null
+      icon: Icons.menu,
+      activeIcon: Icons.remove,
+      // iconTheme: IconThemeData(color: Colors.grey[50], size: 30),
 
-    return buffer.toString().substring(0, split.length);
+      /// The label of the main button.
+      // label: Text("Open Speed Dial"),
+      /// The active label of the main button, Defaults to label if not specified.
+      // activeLabel: Text("Close Speed Dial"),
+      /// Transition Builder between label and activeLabel, defaults to FadeTransition.
+      // labelTransitionBuilder: (widget, animation) => ScaleTransition(scale: animation,child: widget),
+      /// The below button size defaults to 56 itself, its the FAB size + It also affects relative padding and other elements
+      buttonSize: 56.0,
+      visible: true,
+
+      /// If true user is forced to close dial manually
+      /// by tapping main button and overlay is not rendered.
+      closeManually: false,
+      curve: Curves.bounceIn,
+      overlayColor: Colors.black,
+      overlayOpacity: 0.5,
+      onOpen: () => print('OPENING DIAL'),
+      onClose: () => print('DIAL CLOSED'),
+      tooltip: 'Speed Dial',
+      heroTag: 'speed-dial-hero-tag',
+      backgroundColor: Color(0xccA01D26),
+      foregroundColor: Colors.white,
+      elevation: 8.0,
+      shape: CircleBorder(),
+      // orientation: SpeedDialOrientation.Up,
+      // childMarginBottom: 2,
+      // childMarginTop: 2,
+      children: [
+        SpeedDialChild(
+          child: Icon(Icons.touch_app),
+          backgroundColor: Color(0xccA01D26),
+          foregroundColor: Colors.white,
+          label: 'アイテムからリストを作成',
+          labelStyle: TextStyle(fontSize: 18.0),
+          onTap: () {
+            moveItemListFunc(true);
+            // var itemView = ItemListView(
+            //   taskBloc: _taskBloc,
+            // );
+            // // 編集画面へ
+            // Navigator.of(context).push(
+            //   MaterialPageRoute(
+            //     builder: (context) {
+            //       return itemView;
+            //     },
+            //   ),
+            // );
+          },
+          onLongPress: () => print('SECOND CHILD LONG PRESS'),
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.add),
+          backgroundColor: Color(0xccA01D26),
+          foregroundColor: Colors.white,
+          label: '一からリストを作成',
+          labelStyle: TextStyle(fontSize: 18.0),
+          onTap: () {
+            var editView = TodoEditView(
+              todoBloc: _bloc,
+              todo: Checklist.newTodo(),
+              isNew: true,
+              taskBloc: _taskBloc,
+            );
+            // 編集画面へ
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) {
+                  return editView;
+                },
+              ),
+            );
+          },
+          onLongPress: () => print('THIRD CHILD LONG PRESS'),
+        ),
+      ],
+    );
   }
 
   Color _getAvatarColor(String colorIndex) {
     return AppColors.avatarColors[int.parse(colorIndex) - 1];
   }
-
-  _moveToEditView(BuildContext context, ChecklistBloc bloc, Checklist todo) =>
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => TodoEditView(todoBloc: bloc, todo: todo)));
-
-  _moveToCreateView(BuildContext context, ChecklistBloc bloc) => Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) =>
-              TodoEditView(todoBloc: bloc, todo: Checklist.newTodo())));
-
-  _backgroundOfDismissible() => Container(
-      alignment: Alignment.centerLeft,
-      color: Colors.green,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 0, 0, 0),
-        child: Icon(Icons.done, color: Colors.white),
-      ));
-
-  _secondaryBackgroundOfDismissible() => Container(
-      alignment: Alignment.centerRight,
-      color: Colors.green,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(0, 0, 20, 0),
-        child: Icon(Icons.done, color: Colors.white),
-      ));
 }

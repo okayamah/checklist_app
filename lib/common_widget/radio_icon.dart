@@ -88,9 +88,9 @@ class _RadioIconState extends State<RadioIcon>
     return ClipOval(
       child: GestureDetector(
         child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
-          width: 40,
-          height: 40,
+          margin: EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
+          width: MediaQuery.of(context).size.width * 0.8/6 - 10.0,
+          height: MediaQuery.of(context).size.width * 0.8/6 - 10.0,
           decoration: BoxDecoration(
             color: isSelected ? backgroundColor : Colors.white,
             shape: BoxShape.circle,
