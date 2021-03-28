@@ -1,3 +1,4 @@
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:checklist_app/components/todo_edit_view.dart';
 import 'package:checklist_app/common_widget/popup_menu.dart';
 import 'package:checklist_app/configs/const_text.dart';
@@ -11,6 +12,13 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class CalendarScreen extends StatefulWidget {
+  // // Bloc
+  // final ChecklistBloc bloc;
+  // final TaskBloc taskBloc;
+
+  // コンストラクタ
+  CalendarScreen();
+
   @override
   State<StatefulWidget> createState() {
     return _CalendarScreenState();
@@ -32,6 +40,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (_selectedDay == null) {
       _selectedDay = DateTime.now();
     }
+  }
+
+  @override
+  dispose() {
+    // widget.bloc.dispose();
+    // widget.taskBloc.dispose();
+    super.dispose();
   }
 
   @override
@@ -194,8 +209,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         );
                       },
                       onDelete: () {
-                        // カードを削除
-                        _bloc.delete(todo.check.id);
+                        AwesomeDialog(
+                          context: context,
+                          keyboardAware: true,
+                          dismissOnBackKeyPress: true,
+                          dialogType: DialogType.WARNING,
+                          animType: AnimType.SCALE,
+                          btnCancelText: "Cancel",
+                          btnOkText: "OK",
+                          title: '削除確認',
+                          padding: const EdgeInsets.all(16.0),
+                          desc: 'この買い物リストを削除しますか？',
+                          btnCancelOnPress: () {},
+                          btnOkOnPress: () {
+                            // カードを削除
+                            _bloc.delete(todo.check.id);
+                          },
+                        ).show();
                       },
                     ),
                     onTap: () {

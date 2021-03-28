@@ -1,21 +1,21 @@
 import 'package:checklist_app/entity/task.dart';
 
 class ItemListViewModel {
-  List<TaskInfo> taskInfoList;
+  List<ItemInfo> taskInfoList;
 
   ItemListViewModel({
     this.taskInfoList,
   });
 
   ItemListViewModel.init() {
-    taskInfoList = new List<TaskInfo>();
+    taskInfoList = new List<ItemInfo>();
   }
 }
-class TaskInfo {
+class ItemInfo {
   Task task;
   bool isSelected;
 
-  TaskInfo({
+  ItemInfo({
     this.task,
     this.isSelected
   });

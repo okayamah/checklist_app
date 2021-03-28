@@ -1,7 +1,10 @@
+import 'package:badges/badges.dart';
 import 'package:checklist_app/configs/const_text.dart';
+import 'package:checklist_app/models/item_list_view_model.dart';
 import 'package:checklist_app/models/todo_edit_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:checklist_app/components/item_list_view.dart';
 import 'package:checklist_app/repositories/todo_bloc.dart';
 import 'package:checklist_app/repositories/task_bloc.dart';
 
@@ -31,23 +34,40 @@ import 'todo_list_view.dart';
 
 class ChecklistApp extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  ChecklistAppState createState() => ChecklistAppState();
 }
 
 // SingleTickerProviderStateMixinを使用。後述
-class _MyHomePageState extends State<ChecklistApp>
+class ChecklistAppState extends State<ChecklistApp>
     with SingleTickerProviderStateMixin {
+  // widgetアクセス用キー
+  GlobalKey<ScaffoldState> _key = GlobalKey<ScaffoldState>();
+  GlobalKey<ItemListViewState> itemListViewGlobalKey =
+      GlobalKey<ItemListViewState>();
+
   // ページ切り替え用のコントローラを定義
   PageController _pageController;
 
   // ページインデックス保存用
   int _screen = 0;
+  int _beforeScreen = 0; // 前画面
 
   // ヘッダータイトル
   String _header = ConstText.todoListView;
 
   // アイテム一覧画面の表示モード
-  bool _selectingmode = false; // 選択モード
+  bool _selectingmode = false; // true:選択モード
+
+  // 買い物カートに表示するカウンター
+  List<ItemInfo> cart = List<ItemInfo>();
+
+  // Bloc
+  final ChecklistBloc checklistBloc = new ChecklistBloc();
+  final TaskBloc taskBloc = new TaskBloc();
+  final ChecklistBloc checklistBloc2 = new ChecklistBloc();
+  final TaskBloc taskBloc2 = new TaskBloc();
+  final ChecklistBloc checklistBloc3 = new ChecklistBloc();
+  final TaskBloc taskBloc3 = new TaskBloc();
 
   // ページ下部に並べるナビゲーションメニューの一覧
   List<BottomNavigationBarItem> myBottomNavBarItems() {
@@ -74,7 +94,6 @@ class _MyHomePageState extends State<ChecklistApp>
     );
 
     // プリセットアイテムの登録
-    TaskBloc taskBloc = new TaskBloc();
     // taskBloc.selectAll().then((value) {
     //   if (value.length == 0) {
     TodoEditViewModel viewModel = TodoEditViewModel.map(Preset.items);
@@ -90,32 +109,69 @@ class _MyHomePageState extends State<ChecklistApp>
     super.dispose();
   }
 
-  String getHeader() {
-    switch (_screen) {
-      case 0:
-        _header = ConstText.todoListView;
-        break;
-      case 1:
+  // String getHeader() {
+  //   switch (_screen) {
+  //     case 0:
+  //       _header = ConstText.todoListView;
+  //       break;
+  //     case 1:
+  //       _header = "アイテム一覧";
+  //       break;
+  //     case 2:
+  //       _header = "カレンダー";
+  //       break;
+  //     default:
+  //       _header = ConstText.todoListView;
+  //       break;
+  //   }
+  //   return _header;
+  // }
+
+  // インデックスに従って遷移
+  void changePage(int index) {
+    setState(() {
+      // // ページインデックスを更新
+      // _beforeScreen = _screen;
+      // _screen = index;
+
+      // 選択中フラグはfalseにする
+      _selectingmode = false;
+      cart.clear();
+
+      // アイテム一覧画面への遷移であれば、ヘッダータイトルを更新する
+      if (index == 1) {
         _header = "アイテム一覧";
-        break;
-      case 2:
-        _header = "カレンダー";
-        break;
-      default:
-        _header = ConstText.todoListView;
-        break;
-    }
-    return _header;
+
+        // 各アイテムの選択状態を初期化
+        itemListViewGlobalKey.currentState.viewModel.taskInfoList.forEach((e) {
+          e.isSelected = false;
+        });
+      }
+
+      // ページ遷移を定義。
+      // curveで指定できるのは以下
+      // https://api.flutter.dev/flutter/animation/Curves-class.html
+      _pageController.animateToPage(index,
+          duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+    });
   }
 
-  void changeItemList(bool selectingmode) {
+  // アイテム選択画面へ遷移
+  void changeItemList(bool selectingmode, bool isFromItemList) {
     setState(() {
       // ページインデックスを更新
       _selectingmode = selectingmode;
+      _header = "アイテム選択中";
+
+      // アイテム一覧画面からの遷移であれば、前画面インデックスを更新
+      if (isFromItemList) {
+        _beforeScreen = 1; // アイテム一覧画面
+      }
 
       // 表示しているページがアイテム一覧でなければ遷移
       if (_screen != 1) {
-        _screen = 1;
+        // _beforeScreen = _screen;
+        // _screen = 1;
 
         // ページ遷移を定義。
         // curveで指定できるのは以下
@@ -126,14 +182,48 @@ class _MyHomePageState extends State<ChecklistApp>
     });
   }
 
+  // 買い物カートウィジェット
+  Widget _shoppingCartBadge() {
+    return Padding(
+      padding: EdgeInsets.only(right: 10.0),
+      child: Badge(
+        // padding: const EdgeInsets.only(right: 0.0),
+        position: BadgePosition.topEnd(top: 0, end: 3),
+        animationDuration: Duration(milliseconds: 300),
+        animationType: BadgeAnimationType.fade,
+        badgeContent: Text(
+          cart.length.toString(),
+          style: TextStyle(color: Colors.white),
+        ),
+        child: IconButton(icon: Icon(Icons.shopping_cart), onPressed: () {}),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _key,
       // Appbar
       appBar: AppBar(
+        leading: !_selectingmode // アイテム選択中是非
+            ? IconButton(
+                // 通常はドロワーボタン
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  _key.currentState.openDrawer();
+                },
+              )
+            : IconButton(
+                // アイテム選択画面ではキャンセルボタン
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  changePage(_beforeScreen);
+                },
+              ),
         elevation: 0.0,
         title: Text(
-          getHeader(),
+          _header,
           style: TextStyle(
             fontFamily: 'puikko',
             fontSize: 24,
@@ -142,6 +232,9 @@ class _MyHomePageState extends State<ChecklistApp>
           textAlign: TextAlign.left,
         ),
         backgroundColor: AppColors.DEFAULT_COLOR,
+        actions: <Widget>[
+          if (_selectingmode) _shoppingCartBadge(),
+        ],
       ),
       // ),
       // ページビュー
@@ -153,70 +246,117 @@ class _MyHomePageState extends State<ChecklistApp>
           onPageChanged: (index) {
             setState(() {
               // ページインデックスを更新
+              _beforeScreen = _screen;
               _screen = index;
 
               // アイテム一覧以外への遷移であれば選択モードフラグを初期化.
               if (index != 1) {
                 _selectingmode = false;
               }
+
+              // ヘッダー名の更新
+              switch (_screen) {
+                case 0:
+                  _header = ConstText.todoListView;
+                  break;
+                case 1:
+                  if (!_selectingmode) {
+                    _header = "アイテム一覧";
+                  } else {
+                    _header = "アイテム選択中";
+                  }
+                  break;
+                case 2:
+                  _header = "カレンダー";
+                  break;
+                default:
+                  _header = ConstText.todoListView;
+                  break;
+              }
             });
           },
           // ページ下部のナビゲーションメニューに相当する各ページビュー。後述
           children: [
             // ホーム画面
-            MultiProvider(providers: [
-              Provider<ChecklistBloc>(
-                create: (context) => new ChecklistBloc(),
-                dispose: (context, bloc) => bloc.dispose(),
+            MultiProvider(
+              providers: [
+                Provider<ChecklistBloc>(
+                  create: (context) => new ChecklistBloc(),
+                  dispose: (context, bloc) => bloc.dispose(),
+                ),
+                Provider<TaskBloc>(
+                  create: (context) => new TaskBloc(),
+                  dispose: (context, bloc) => bloc.dispose(),
+                )
+              ],
+              child: TodoListView(
+                moveItemListFunc: changeItemList,
+                // bloc: checklistBloc,
+                // taskBloc: taskBloc,
               ),
-              Provider<TaskBloc>(
-                create: (context) => new TaskBloc(),
-                dispose: (context, bloc) => bloc.dispose(),
-              )
-            ], child: TodoListView(moveItemListFunc: changeItemList)),
+            ),
             // アイテムリスト画面
-            MultiProvider(providers: [
-              Provider<ChecklistBloc>(
-                create: (context) => new ChecklistBloc(),
-                dispose: (context, bloc) => bloc.dispose(),
+            MultiProvider(
+              providers: [
+                Provider<ChecklistBloc>(
+                  create: (context) => new ChecklistBloc(),
+                  dispose: (context, bloc) => bloc.dispose(),
+                ),
+                Provider<TaskBloc>(
+                  create: (context) => new TaskBloc(),
+                  dispose: (context, bloc) => bloc.dispose(),
+                )
+              ],
+              child: ItemListView(
+                key: itemListViewGlobalKey,
+                selectingmode: _selectingmode,
+                moveItemListFunc: changeItemList,
+                // bloc: checklistBloc2,
+                // taskBloc: taskBloc2,
               ),
-              Provider<TaskBloc>(
-                create: (context) => new TaskBloc(),
-                dispose: (context, bloc) => bloc.dispose(),
-              )
-            ], child: ItemListView(selectingmode: _selectingmode)),
+            ),
             // カレンダー画面
-            MultiProvider(providers: [
-              Provider<ChecklistBloc>(
-                create: (context) => new ChecklistBloc(),
-                dispose: (context, bloc) => bloc.dispose(),
-              ),
-              Provider<TaskBloc>(
-                create: (context) => new TaskBloc(),
-                dispose: (context, bloc) => bloc.dispose(),
-              )
-            ], child: CalendarScreen()),
+            MultiProvider(
+              providers: [
+                Provider<ChecklistBloc>(
+                  create: (context) => new ChecklistBloc(),
+                  dispose: (context, bloc) => bloc.dispose(),
+                ),
+                Provider<TaskBloc>(
+                  create: (context) => new TaskBloc(),
+                  dispose: (context, bloc) => bloc.dispose(),
+                )
+              ],
+              child: CalendarScreen(
+                  // bloc: checklistBloc3,
+                  // taskBloc: taskBloc3,
+                  ),
+            ),
           ]),
       // ページ下部のナビゲーションメニュー
-      bottomNavigationBar: BottomNavigationBar(
-        fixedColor: AppColors.DEFAULT_COLOR,
-        // 現在のページインデックス
-        currentIndex: _screen,
-        // onTapでナビゲーションメニューがタップされた時の処理を定義
-        onTap: (index) {
-          setState(() {
-            // ページインデックスを更新
-            _screen = index;
+      bottomNavigationBar: Visibility(
+        visible: !_selectingmode,
+        child: BottomNavigationBar(
+          fixedColor: AppColors.DEFAULT_COLOR,
+          // 現在のページインデックス
+          currentIndex: _screen,
+          // onTapでナビゲーションメニューがタップされた時の処理を定義
+          onTap: (index) {
+            setState(() {
+              // ページインデックスを更新
+              // _beforeScreen = _screen;
+              // _screen = index;
 
-            // ページ遷移を定義。
-            // curveで指定できるのは以下
-            // https://api.flutter.dev/flutter/animation/Curves-class.html
-            _pageController.animateToPage(index,
-                duration: Duration(milliseconds: 300), curve: Curves.easeOut);
-          });
-        },
-        // 定義済のナビゲーションメニューのアイテムリスト
-        items: myBottomNavBarItems(),
+              // ページ遷移を定義。
+              // curveで指定できるのは以下
+              // https://api.flutter.dev/flutter/animation/Curves-class.html
+              _pageController.animateToPage(index,
+                  duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+            });
+          },
+          // 定義済のナビゲーションメニューのアイテムリスト
+          items: myBottomNavBarItems(),
+        ),
       ),
       drawer: Drawer(
         // Add a ListView to the drawer. This ensures the user can scroll

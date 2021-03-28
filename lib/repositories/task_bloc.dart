@@ -7,12 +7,19 @@ import 'package:checklist_app/models/todo_edit_view_model.dart';
 import 'package:checklist_app/provider/db_provider.dart';
 
 class TaskBloc {
+  bool _isDisposed = false;
   final _tableName = "Task";
   final _todoController = StreamController<List<Task>>();
   Stream<List<Task>> get taskStream => _todoController.stream;
 
   getTasks() async {
-    _todoController.sink.add(await selectAll());
+    try {
+      if (!_todoController.isClosed && !_isDisposed) {
+        _todoController.sink.add(await selectAll());
+      }
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   TaskBloc() {
@@ -20,6 +27,7 @@ class TaskBloc {
   }
 
   dispose() {
+    _isDisposed = true;
     _todoController.close();
   }
 

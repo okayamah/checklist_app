@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:checklist_app/models/todo_edit_view_model.dart';
 import 'package:circular_check_box/circular_check_box.dart';
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
@@ -12,9 +11,11 @@ import 'package:checklist_app/repositories/todo_bloc.dart';
 import 'package:checklist_app/repositories/task_bloc.dart';
 import 'package:checklist_app/common_widget/text_field.dart';
 import 'package:checklist_app/common_widget/icon_field.dart';
+import 'package:autocomplete_textfield/autocomplete_textfield.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 class TodoEditView extends StatefulWidget {
-  final DateFormat _format = DateFormat("yyyy-MM-dd HH:mm");
+  final DateFormat _format = DateFormat("yyyy/MM/dd");
 
   final ChecklistBloc todoBloc;
   final TaskBloc taskBloc;
@@ -52,6 +53,9 @@ class _TodoEditViewState extends State<TodoEditView> {
   TodoEditViewModel viewModel = new TodoEditViewModel();
   bool _enabled = true; // 閲覧：true, 編集：false
 
+  // 全タスク保持変数
+  List<String> allTasks = new List<String>();
+
   Card createCard(TaskInfo taskInfo, int index) {
     if (taskInfo == null) {
       taskInfo = new TaskInfo();
@@ -62,6 +66,196 @@ class _TodoEditViewState extends State<TodoEditView> {
     }
     TextEditingController jobController = TextEditingController();
     jobController.text = taskInfo.task.title;
+
+    // サジェスト機能 start
+    List<String> added = [];
+    String currentText = "";
+    GlobalKey<AutoCompleteTextFieldState<String>> key = new GlobalKey();
+    var testField = SimpleAutoCompleteTextField(
+      key: key,
+      style: TextStyle(
+          decoration: !taskInfo.status
+              ? _enabled
+                  ? TextDecoration.none
+                  : TextDecoration.underline
+              : TextDecoration.lineThrough),
+      onFocusChanged: (isFocus) {
+        if (_enabled) {
+          FocusScope.of(context).requestFocus(new FocusNode());
+          setState(() {
+            taskInfo.status = !taskInfo.status;
+          });
+        }
+      },
+      controller: jobController,
+      suggestions: suggestions,
+      // textChanged: (text) => jobController.text = text,
+      clearOnSubmit: true,
+      textSubmitted: (text) => setState(() {
+        if (text != "") {
+          added.add(text);
+          taskInfo.task.title = text;
+        }
+      }),
+      decoration: InputDecoration(
+        suffixIcon: _enabled
+            ? CircularCheckBox(
+                activeColor: AppColors.DEFAULT_COLOR,
+                value: taskInfo.status,
+                onChanged: (bool value) {
+                  setState(() {
+                    taskInfo.status = value;
+                  });
+                })
+            : IconButton(
+                icon: selectSuffixIcon(taskInfo.status),
+                onPressed: () {
+                  setState(() {
+                    if (!_enabled) {
+                      cards.removeAt(index);
+                      if (viewModel != null) {
+                        viewModel.taskList.remove(taskInfo);
+                      }
+                      if (taskInfo.task.id != null &&
+                          taskInfo.task.id.isNotEmpty) {
+                        widget.taskBloc
+                            .delete(taskInfo.task.id, widget._newTodo.id);
+                      }
+                    } else {
+                      taskInfo.status = !taskInfo.status;
+                    }
+                  });
+                },
+              ),
+        border: InputBorder.none,
+        hintText: 'タスクを入力',
+        contentPadding:
+            EdgeInsets.only(top: 10.0, right: 20.0, bottom: 10.0, left: 20.0),
+      ),
+    );
+
+    // ひらがなからカタカナへ変換
+    String hiraToKana(String str) {
+      return str.replaceAllMapped(new RegExp("[ぁ-ゔ]"),
+          (Match m) => String.fromCharCode(m.group(0).codeUnitAt(0) + 0x60));
+    }
+
+    // 候補にマッチする文字列をリストから取得する
+    // pokemonList ... 候補となる文字列一覧(別クラスで定義)
+    List<String> _getSuggestions(String query) {
+      List<String> matches = List();
+
+      matches.addAll(allTasks);
+
+      matches.retainWhere((s) => s.contains(hiraToKana(query)));
+      return matches;
+    }
+
+    var testField2 = TypeAheadFormField(
+        hideKeyboard: _enabled,
+        textFieldConfiguration: TextFieldConfiguration(
+          // readOnly: _enabled,
+          onChanged: (value) {
+            taskInfo.task.title = value;
+          },
+          // enableInteractiveSelection: _enabled,
+          onTap: () {
+            if (_enabled) {
+              FocusScope.of(context).requestFocus(new FocusNode());
+              setState(() {
+                taskInfo.status = !taskInfo.status;
+              });
+            }
+          },
+          style: TextStyle(
+              decoration: !taskInfo.status
+                  ? _enabled
+                      ? TextDecoration.none
+                      : TextDecoration.underline
+                  : TextDecoration.lineThrough),
+          controller: jobController,
+          decoration: InputDecoration(
+            suffixIcon: _enabled
+                ? CircularCheckBox(
+                    activeColor: AppColors.DEFAULT_COLOR,
+                    value: taskInfo.status,
+                    onChanged: (bool value) {
+                      setState(() {
+                        taskInfo.status = value;
+                      });
+                    })
+                : IconButton(
+                    icon: selectSuffixIcon(taskInfo.status),
+                    onPressed: () {
+                      setState(() {
+                        if (!_enabled) {
+                          cards.removeAt(index);
+                          if (viewModel != null) {
+                            viewModel.taskList.remove(taskInfo);
+                          }
+                          if (taskInfo.task.id != null &&
+                              taskInfo.task.id.isNotEmpty) {
+                            widget.taskBloc
+                                .delete(taskInfo.task.id, widget._newTodo.id);
+                          }
+                        } else {
+                          taskInfo.status = !taskInfo.status;
+                        }
+                      });
+                    },
+                  ),
+            border: InputBorder.none,
+            hintText: 'タスクを入力',
+            contentPadding: EdgeInsets.only(
+                top: 10.0, right: 20.0, bottom: 10.0, left: 20.0),
+          ),
+        ),
+        // 入力した値にマッチングするものを取得
+        suggestionsCallback: (pattern) {
+          return _getSuggestions(pattern);
+        },
+
+        // マッチング結果を画面に表示
+        itemBuilder: (context, suggestion) {
+          return ListTile(
+            title: Text(suggestion),
+          );
+        },
+        transitionBuilder: (context, suggestionsBox, controller) {
+          return suggestionsBox;
+        },
+
+        // 候補をタップしたときに起動
+        onSuggestionSelected: (suggestion) async {
+          setState(() {
+            taskInfo.task.title = suggestion;
+            jobController.text = suggestion;
+          });
+          // _validateError = await textFieldValidate(suggestion);
+          // _formKey.currentState.validate();
+          // setState(() {});
+        },
+
+        // テキストへの入力を確定したときに起動
+        onSaved: (value) async {
+          setState(() {
+            taskInfo.task.title = value;
+            jobController.text = value;
+          });
+          // _validateError = await textFieldValidate(value);
+          // _formKey.currentState.validate();
+          // setState(() {});
+        },
+
+        // 存在するポケモン名が入力されているかをチェック
+        // ignore: missing_return
+        validator: (value) {
+          // if (!_validateError) {
+          //   return "存在するポケモンを入力してください";
+          // }
+        });
+    // サジェスト機能 end
+
     var textField = TextField(
       readOnly: _enabled,
       onChanged: (value) {
@@ -124,7 +318,8 @@ class _TodoEditViewState extends State<TodoEditView> {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(5.0),
             side: BorderSide(color: Colors.black87)),
-        child: textField
+        // child: textField,
+        child: testField2
         //   ],
         // ),
         );
@@ -172,6 +367,11 @@ class _TodoEditViewState extends State<TodoEditView> {
       });
     }
     addAddCard();
+
+    // 全タスクの取得（サジェスト用）
+    widget.taskBloc
+        .selectAll()
+        .then((value) => allTasks.addAll(value.map((e) => e.title)));
   }
 
   void addAddCard() {
@@ -225,6 +425,10 @@ class _TodoEditViewState extends State<TodoEditView> {
           },
           icon: Icon(Icons.arrow_back),
         ),
+        title: Text(
+          widget._newTodo.title,
+          style: TextStyle(color: Colors.black54),
+        ),
         backgroundColor: Colors.transparent,
         bottomOpacity: 0.0,
         elevation: 0.0,
@@ -262,10 +466,10 @@ class _TodoEditViewState extends State<TodoEditView> {
         padding: const EdgeInsets.only(left: 20.0, right: 20.0, bottom: 30.0),
         child: Column(
           children: <Widget>[
-            _titleTextFormField(),
-            _iconFormField(widget._newTodo.icon.isNotEmpty
-                ? int.parse(widget._newTodo.icon)
-                : 0),
+            // _titleTextFormField(),
+            // _iconFormField(widget._newTodo.icon.isNotEmpty
+            //     ? int.parse(widget._newTodo.icon)
+            //     : 0),
             _dueDateTimeFormField(),
             _noteTextFormField(),
             // Expanded(child: SizedBox()),
@@ -282,26 +486,40 @@ class _TodoEditViewState extends State<TodoEditView> {
                             viewModel.taskList.addAll(snapshot.data.taskList);
                           } else {
                             // 追加ボタン以外を削除
-                            var dbNum = viewModel.taskList
-                                .where((e) => !e.isNew)
-                                .length;
-                            cards.removeRange(0, dbNum);
+                            if (_enabled) {
+                              var dbNum = viewModel.taskList
+                                  .where((e) => !e.isNew)
+                                  .length;
+                              cards.removeRange(0, dbNum);
+                            }
                           }
 
                           // cardオブジェクトを生成し、リストに詰める
-                          // for (var item
-                          //     in viewModel.taskList.where((e) => !e.isNew)) {
-                          //   Card card = createCard(item, cards.length - 1);
-                          //   cards.insert(cards.length - 1, card);
+                          if (_enabled) {
+                            for (var item
+                                in viewModel.taskList.where((e) => !e.isNew)) {
+                              Card card = createCard(item, cards.length - 1);
+                              cards.insert(cards.length - 1, card);
+                            }
+                          }
+                          // if (_enabled) {
+                          //   // 追加ボタン以外を削除
+                          //   if (cards.length == 1) {
+                          //     var dbNum = viewModel.taskList
+                          //         .where((e) => !e.isNew)
+                          //         .length;
+                          //     cards.removeRange(0, dbNum);
+                          //   }
+                          //   // cardオブジェクトを生成し、リストに詰める
+                          //   viewModel.taskList
+                          //       .where((e) => !e.isNew)
+                          //       .toList()
+                          //       .asMap()
+                          //       .forEach((int index, TaskInfo item) {
+                          //     Card card = createCard(item, index);
+                          //     cards.insert(index, card);
+                          //   });
                           // }
-                          viewModel.taskList
-                              .where((e) => !e.isNew)
-                              .toList()
-                              .asMap()
-                              .forEach((int index, TaskInfo item) {
-                            Card card = createCard(item, index);
-                            cards.insert(index, card);
-                          });
                           return ListView.builder(
                             itemCount: cards.length,
                             itemBuilder: (lctx, index) {
@@ -464,6 +682,7 @@ class _TodoEditViewState extends State<TodoEditView> {
               }
               await widget.todoBloc.update(widget._newTodo);
             }
+
             Navigator.of(context).pop();
           },
           shape: StadiumBorder(),
@@ -471,4 +690,39 @@ class _TodoEditViewState extends State<TodoEditView> {
           textColor: Colors.white,
         ),
       );
+
+  List<String> suggestions = [
+    "Apple",
+    "Armidillo",
+    "Actual",
+    "Actuary",
+    "America",
+    "Argentina",
+    "Australia",
+    "Antarctica",
+    "Blueberry",
+    "Cheese",
+    "Danish",
+    "Eclair",
+    "Fudge",
+    "Granola",
+    "Hazelnut",
+    "Ice Cream",
+    "Jely",
+    "Kiwi Fruit",
+    "Lamb",
+    "Macadamia",
+    "Nachos",
+    "Oatmeal",
+    "Palm Oil",
+    "Quail",
+    "Rabbit",
+    "Salad",
+    "T-Bone Steak",
+    "Urid Dal",
+    "Vanilla",
+    "Waffles",
+    "Yam",
+    "Zest"
+  ];
 }

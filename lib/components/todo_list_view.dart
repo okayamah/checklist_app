@@ -1,4 +1,4 @@
-import 'package:checklist_app/components/item_list_view.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:checklist_app/models/todo_list_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -13,8 +13,11 @@ import 'package:group_list_view/group_list_view.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class TodoListView extends StatelessWidget {
+  // final ChecklistBloc bloc;
+  // final TaskBloc taskBloc;
   final Function moveItemListFunc;
-  TodoListView({this.moveItemListFunc});
+  TodoListView({this.moveItemListFunc //, this.bloc, this.taskBloc
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -143,8 +146,23 @@ class TodoListView extends StatelessWidget {
                             );
                           },
                           onDelete: () {
-                            // カードを削除
-                            _bloc.delete(todo.check.id);
+                            AwesomeDialog(
+                              context: context,
+                              keyboardAware: true,
+                              dismissOnBackKeyPress: true,
+                              dialogType: DialogType.WARNING,
+                              animType: AnimType.SCALE,
+                              btnCancelText: "Cancel",
+                              btnOkText: "OK",
+                              title: '削除確認',
+                              padding: const EdgeInsets.all(16.0),
+                              desc: 'この買い物リストを削除しますか？',
+                              btnCancelOnPress: () {},
+                              btnOkOnPress: () {
+                                // カードを削除
+                                _bloc.delete(todo.check.id);
+                              },
+                            ).show();
                           },
                         ),
                         // Icon(Icons.arrow_forward_ios),
@@ -250,7 +268,7 @@ class TodoListView extends StatelessWidget {
           label: 'アイテムからリストを作成',
           labelStyle: TextStyle(fontSize: 18.0),
           onTap: () {
-            moveItemListFunc(true);
+            moveItemListFunc(true, false);
             // var itemView = ItemListView(
             //   taskBloc: _taskBloc,
             // );

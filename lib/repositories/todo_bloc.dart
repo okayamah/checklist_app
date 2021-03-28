@@ -5,12 +5,19 @@ import 'package:checklist_app/models/todo_list_view_model.dart';
 import 'package:checklist_app/provider/db_provider.dart';
 
 class ChecklistBloc {
+  bool _isDisposed = false;
   final _tableName = "Todo";
   final _todoController = StreamController<TodoListViewModel>();
   Stream<TodoListViewModel> get todoStream => _todoController.stream;
 
   getTodos() async {
-    _todoController.sink.add(await selectAllWithStatus());
+    try {
+      if (!_todoController.isClosed && !_isDisposed) {
+        _todoController.sink.add(await selectAllWithStatus());
+      }
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   ChecklistBloc() {
@@ -18,6 +25,7 @@ class ChecklistBloc {
   }
 
   dispose() {
+    _isDisposed = true;
     _todoController.close();
   }
 
@@ -37,11 +45,12 @@ class ChecklistBloc {
 
     TodoListViewModel viewModel = TodoListViewModel.init();
     for (var item in list) {
-      var tasks =
-          await db.query("TodoTask", where: 'todoId = ? and status = "0"', whereArgs: [item.id]);
-          print("todo id=${item.id}, 未完了タスク数=${tasks.length}");
-      
-      ChecklistInfo value = new ChecklistInfo(check: item, status: tasks.length == 0 ? true : false);
+      var tasks = await db.query("TodoTask",
+          where: 'todoId = ? and status = "0"', whereArgs: [item.id]);
+      print("todo id=${item.id}, 未完了タスク数=${tasks.length}");
+
+      ChecklistInfo value = new ChecklistInfo(
+          check: item, status: tasks.length == 0 ? true : false);
       viewModel.checklist.add(value);
     }
     return viewModel;

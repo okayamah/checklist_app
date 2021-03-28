@@ -1,10 +1,32 @@
-import 'package:checklist_app/components/todo_edit_view.dart';
 import 'package:flutter/material.dart';
 import 'package:checklist_app/components/login.dart';
 import 'package:checklist_app/configs/const_text.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // 追加
 
 void main() {
-  runApp(new MaterialApp(
+  runApp(
+      // MultiProvider(
+      //   providers: [
+      //     Provider<ChecklistBloc>(
+      //       create: (context) => new ChecklistBloc(),
+      //       dispose: (context, bloc) => bloc.dispose(),
+      //     ),
+      //     Provider<TaskBloc>(
+      //       create: (context) => new TaskBloc(),
+      //       dispose: (context, bloc) => bloc.dispose(),
+      //     )
+      //   ],
+      //   child:
+      new MaterialApp(
+    // 追加　ここから
+    localizationsDelegates: [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+    ],
+    supportedLocales: [
+      Locale('ja', 'JP'),
+    ],
+    // 追加　ここまで
     title: ConstText.appTitle,
     theme: ThemeData(
       brightness: Brightness.light,
@@ -15,6 +37,7 @@ void main() {
       '/': (_) => new Splash(),
       '/login': (_) => new Login(),
     },
+    // )
   ));
 }
 

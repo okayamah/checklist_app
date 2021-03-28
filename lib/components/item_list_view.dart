@@ -1,5 +1,6 @@
 import 'package:checklist_app/common_widget/colord_tab_bar.dart';
 import 'package:checklist_app/common_widget/selfmade_icon.dart';
+import 'package:checklist_app/components/app.dart';
 import 'package:checklist_app/entity/task.dart';
 import 'package:checklist_app/models/item_list_view_model.dart';
 import 'package:circular_check_box/circular_check_box.dart';
@@ -12,26 +13,35 @@ import 'package:checklist_app/configs/const_text.dart';
 import 'package:checklist_app/entity/checklist.dart';
 import 'package:checklist_app/repositories/todo_bloc.dart';
 import 'package:checklist_app/repositories/task_bloc.dart';
-import 'package:group_list_view/group_list_view.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class ItemListView extends StatefulWidget {
+  // // Bloc
+  // final ChecklistBloc bloc;
+  // final TaskBloc taskBloc;
+
   bool selectingmode = false; // 選択モード
+  final Function moveItemListFunc; // コールバック関数
 
   // コンストラクタ
-  ItemListView({this.selectingmode});
+  ItemListView(
+      {this.selectingmode,
+      this.moveItemListFunc,
+      Key key,
+      // this.bloc,
+      // this.taskBloc
+      })
+      : super(key: key);
 
   @override
-  _ItemListViewState createState() => _ItemListViewState();
+  ItemListViewState createState() => ItemListViewState();
 }
 
-class _ItemListViewState extends State<ItemListView> {
+class ItemListViewState extends State<ItemListView> {
   ItemListViewModel viewModel = new ItemListViewModel.init(); // ビューモデル
 
   var selectedColor = Colors.lightBlue;
   var mycolor = Colors.white;
-  ChecklistBloc _bloc;
-  TaskBloc _taskBloc;
 
   Widget _header(String name) => Text(name,
       style: TextStyle(
@@ -39,14 +49,28 @@ class _ItemListViewState extends State<ItemListView> {
         fontWeight: FontWeight.bold,
       ));
 
-  List<ListTile> _buildItems(BuildContext context, List<TaskInfo> items,
-          ChecklistBloc _bloc, TaskBloc _taskBloc) =>
+  List<ListTile> _buildItems(
+          BuildContext context,
+          List<ItemInfo> items,
+          ChecklistBloc _bloc,
+          TaskBloc _taskBloc,
+          ChecklistAppState homePageState) =>
       items
           .map((task) => ListTile(
                 onLongPress: () {
                   setState(() {
                     widget.selectingmode = true;
                     task.isSelected = true;
+                    widget.moveItemListFunc(true, true);
+
+                    // 買い物カートの更新
+                    homePageState.setState(() {
+                      if (task.isSelected) {
+                        homePageState.cart.add(task);
+                      } else {
+                        homePageState.cart.remove(task);
+                      }
+                    });
                   });
                 },
                 contentPadding:
@@ -65,6 +89,15 @@ class _ItemListViewState extends State<ItemListView> {
                         onChanged: (bool value) {
                           setState(() {
                             task.isSelected = value;
+
+                            // 買い物カートの更新
+                            homePageState.setState(() {
+                              if (task.isSelected) {
+                                homePageState.cart.add(task);
+                              } else {
+                                homePageState.cart.remove(task);
+                              }
+                            });
                           });
                         })
                     : PopUpMenu(
@@ -76,6 +109,15 @@ class _ItemListViewState extends State<ItemListView> {
                   if (widget.selectingmode) {
                     setState(() {
                       task.isSelected = !task.isSelected;
+
+                      // 買い物カートの更新
+                      homePageState.setState(() {
+                        if (task.isSelected) {
+                          homePageState.cart.add(task);
+                        } else {
+                          homePageState.cart.remove(task);
+                        }
+                      });
                     });
                   }
                 },
@@ -108,13 +150,19 @@ class _ItemListViewState extends State<ItemListView> {
       );
 
   @override
+  dispose() {
+    // widget.bloc.dispose();
+    // widget.taskBloc.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (_bloc == null) {
-      _bloc = Provider.of<ChecklistBloc>(context, listen: false);
-    }
-    if (_taskBloc == null) {
-      _taskBloc = Provider.of<TaskBloc>(context, listen: false);
-    }
+    //親Stateを探す(正確に言うとclassが同じやつ)
+    final ChecklistAppState homePageState =
+        context.findAncestorStateOfType<ChecklistAppState>();
+    final _bloc = Provider.of<ChecklistBloc>(context, listen: false);
+    final _taskBloc = Provider.of<TaskBloc>(context, listen: false);
     return new DefaultTabController(
         length: 2,
         child: new Scaffold(
@@ -138,7 +186,7 @@ class _ItemListViewState extends State<ItemListView> {
                       if (viewModel.taskInfoList.length == 0) {
                         snapshot.data.forEach((e) {
                           viewModel.taskInfoList
-                              .add(new TaskInfo(task: e, isSelected: false));
+                              .add(new ItemInfo(task: e, isSelected: false));
                         });
                       }
                       var dates = viewModel.taskInfoList
@@ -158,20 +206,20 @@ class _ItemListViewState extends State<ItemListView> {
                               children: dates.map((group) {
                                 int index = dates.indexOf(group);
                                 return ExpandableGroup(
-                                      // isExpanded: index == 0,
-                                      header: _header(group),
-                                      items: _buildItems(
-                                          context,
-                                          viewModel.taskInfoList
-                                              .where((e) =>
-                                                  e.task.category ==
-                                                  dates[index])
-                                              .toList(),
-                                          _bloc,
-                                          _taskBloc),
-                                      headerEdgeInsets: EdgeInsets.only(
-                                          left: 16.0, right: 16.0),
-                                    );
+                                  // isExpanded: index == 0,
+                                  header: _header(group),
+                                  items: _buildItems(
+                                      context,
+                                      viewModel.taskInfoList
+                                          .where((e) =>
+                                              e.task.category == dates[index])
+                                          .toList(),
+                                      _bloc,
+                                      _taskBloc,
+                                      homePageState),
+                                  headerEdgeInsets:
+                                      EdgeInsets.only(left: 16.0, right: 16.0),
+                                );
                               }).toList(),
                             ),
                           ],
@@ -363,37 +411,42 @@ class _ItemListViewState extends State<ItemListView> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: Color(0xccA01D26),
-            foregroundColor: Colors.white,
-            child: const Icon(
-              Icons.check,
-            ),
-            onPressed: () {
-              // 複製して新規作成画面へ
-              var selectedItems =
-                  viewModel.taskInfoList.where((e) => e.isSelected == true);
-              List<Task> tasks = new List<Task>();
-              selectedItems.forEach((e) {
-                tasks.add(e.task);
-              });
-              var editView = TodoEditView(
-                todoBloc: _bloc,
-                todo: Checklist(
-                    title: "", dueDate: DateTime.now(), note: "", icon: ""),
-                isNew: true,
-                taskBloc: _taskBloc,
-                taskList: tasks,
-              );
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) {
-                    return editView;
+          floatingActionButton: widget.selectingmode
+              ? FloatingActionButton(
+                  backgroundColor: Color(0xffA01D26),
+                  foregroundColor: Colors.white,
+                  child: const Icon(
+                    Icons.check,
+                  ),
+                  onPressed: () {
+                    // 複製して新規作成画面へ
+                    var selectedItems = viewModel.taskInfoList
+                        .where((e) => e.isSelected == true);
+                    List<Task> tasks = new List<Task>();
+                    selectedItems.forEach((e) {
+                      tasks.add(e.task);
+                    });
+                    var editView = TodoEditView(
+                      todoBloc: _bloc,
+                      todo: Checklist(
+                          title: "",
+                          dueDate: DateTime.now(),
+                          note: "",
+                          icon: ""),
+                      isNew: true,
+                      taskBloc: _taskBloc,
+                      taskList: tasks,
+                    );
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return editView;
+                        },
+                      ),
+                    ).then((value) => homePageState.changePage(0));
                   },
-                ),
-              );
-            },
-          ),
+                )
+              : Container(),
           // floatingActionButton: buildSpeedDial(_bloc, _taskBloc, context),
         ));
   }
